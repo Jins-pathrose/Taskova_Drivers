@@ -1,0 +1,2 @@
+D:/taskova_drivers/android/app/.cxx/Debug/zl5b1d3r/x86_64/CMakeFiles/edit_cache.dir
+D:/taskova_drivers/android/app/.cxx/Debug/zl5b1d3r/x86_64/CMakeFiles/rebuild_cache.dir
