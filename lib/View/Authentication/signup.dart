@@ -36,7 +36,7 @@ class _RegistrationState extends State<Registration> {
 
     // Use your computer's actual IP address on the network
     // For example: "http://192.168.1.5:8000/api/register/"
-    String baseUrl = "http://192.168.20.15:8000/api/register/";
+    String baseUrl = "http://192.168.20.4:8000/api/register/";
 
     try {
       var response = await http

@@ -42,6 +42,8 @@ dependencies:
   google_fonts: ^6.2.1
   shared_preferences: ^2.5.3
   flutter_secure_storage: ^9.2.4
+  image_picker: ^1.1.2
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +75,7 @@ flutter:
     - assets/Animation - 1745391695732.json
     - assets/google-logo-transparent-2.png
     - assets/th.jpeg
+    - assets/Animation - 1745663024143.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

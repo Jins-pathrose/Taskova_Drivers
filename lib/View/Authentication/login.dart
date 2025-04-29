@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taskova_drivers/Model/apple_sign_in.dart';
+import 'package:taskova_drivers/View/Authentication/forgot_password.dart';
 import 'package:taskova_drivers/View/Authentication/signup.dart';
 import 'package:taskova_drivers/View/Homepage/homepage.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -126,7 +127,7 @@ class _LoginPageState extends State<LoginPage>
 
       try {
         final response = await http.post(
-          Uri.parse('http://192.168.20.15:8000/api/login/'),
+          Uri.parse('http://192.168.20.4:8000/api/login/'),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -312,7 +313,12 @@ class _LoginPageState extends State<LoginPage>
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        // Add forgot password functionality
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
                       },
                       child: Text(
                         'Forgot Password?',
