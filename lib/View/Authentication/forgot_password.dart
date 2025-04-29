@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:taskova_drivers/Model/api_config.dart';
 import 'dart:convert';
 
 import 'package:taskova_drivers/View/Authentication/reset_password.dart';
@@ -26,7 +27,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       try {
         // Make API call to the forgot password endpoint
         final response = await http.post(
-          Uri.parse('http://192.168.20.4:8000/api/forgot-password/'),
+          Uri.parse(ApiConfig.forgotPasswordUrl),
           headers: {
             'Content-Type': 'application/json',
           },

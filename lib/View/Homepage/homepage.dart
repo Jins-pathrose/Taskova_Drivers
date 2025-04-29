@@ -2,14 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskova_drivers/Model/api_config.dart';
 import 'package:taskova_drivers/View/Authentication/login.dart';
-import 'package:taskova_drivers/View/driver_document.dart'; // Adjust the import path as needed
+import 'package:taskova_drivers/View/driver_document.dart';
+import 'package:taskova_drivers/View/profile.dart'; // Adjust the import path as needed
 
 class HomePage extends StatelessWidget {
-  final String email;
-  final String name;
+  
 
-  const HomePage({super.key, required this.email, required this.name});
+  const HomePage({super.key});
 
   // Show success snackbar
   void showSuccessSnackbar(BuildContext context, String message) {
@@ -62,7 +63,7 @@ class HomePage extends StatelessWidget {
 
       // Call logout API
       final response = await http.post(
-        Uri.parse('http://192.168.20.4:8000/api/logout/'),
+        Uri.parse(ApiConfig.logoutUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
@@ -176,8 +177,7 @@ class HomePage extends StatelessWidget {
           children: [
             Text("Welcome!", style: TextStyle(fontSize: 24)),
             SizedBox(height: 10),
-            Text("Name: $name", style: TextStyle(fontSize: 18)),
-            Text("Email: $email", style: TextStyle(fontSize: 18)),
+          
             SizedBox(height: 100),
             ElevatedButton(
               onPressed: () => logout(context),
@@ -196,6 +196,11 @@ class HomePage extends StatelessWidget {
                 DocumentRegistrationPage()
               ));
             }, child: Text('Document Registration')),
+            ElevatedButton(onPressed: (){
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>
+                ProfileRegistrationPage()
+              ));
+            }, child: Text('Driver Profile'))
           ],
         ),
       ),

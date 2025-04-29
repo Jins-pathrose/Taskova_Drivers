@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskova_drivers/Model/api_config.dart';
 import 'dart:convert';
 
 import 'package:taskova_drivers/View/Homepage/admin_approval.dart';
@@ -61,7 +62,7 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
       }
 
       // Create multipart request
-      final uri = Uri.parse('http://192.168.20.4:8000/api/driver-documents/');
+      final uri = Uri.parse(ApiConfig.driverDocumentUrl);
       final request = http.MultipartRequest('POST', uri);
       
       // Add authorization header

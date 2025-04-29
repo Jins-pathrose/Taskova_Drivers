@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:taskova_drivers/Model/api_config.dart';
 import 'dart:convert';
 
 import 'package:taskova_drivers/View/Authentication/login.dart';
@@ -62,7 +63,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
       try {
         final response = await http.post(
-          Uri.parse('http://192.168.20.4:8000/api/reset-password/'),
+          Uri.parse(ApiConfig.resetPasswordUrl),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:taskova_drivers/Model/api_config.dart';
 import 'package:taskova_drivers/Model/validations.dart';
 import 'package:taskova_drivers/View/Authentication/otp.dart';
 import 'login.dart';
@@ -36,12 +37,11 @@ class _RegistrationState extends State<Registration> {
 
     // Use your computer's actual IP address on the network
     // For example: "http://192.168.1.5:8000/api/register/"
-    String baseUrl = "http://192.168.20.4:8000/api/register/";
 
     try {
       var response = await http
           .post(
-            Uri.parse(baseUrl),
+            Uri.parse(ApiConfig.registerUrl),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               "email": _emailController.text,

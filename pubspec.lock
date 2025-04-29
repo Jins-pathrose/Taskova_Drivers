@@ -134,6 +134,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_dotenv:
+    dependency: "direct main"
+    description:
+      name: flutter_dotenv
+      sha256: b7c7be5cd9f6ef7a78429cabd2774d3c4af50e79cb2b7593e3d5d763ef95c61b
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -464,6 +472,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  nested:
+    dependency: transitive
+    description:
+      name: nested
+      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   path:
     dependency: transitive
     description:
@@ -536,6 +552,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  provider:
+    dependency: "direct main"
+    description:
+      name: provider
+      sha256: "489024f942069c2920c844ee18bb3d467c69e48955a4f32d1677f71be103e310"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.4"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -669,6 +693,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.4"
+  translator:
+    dependency: "direct main"
+    description:
+      name: translator
+      sha256: "8f5e56d0ffb8f493b23ad0e4f824c17e5f43d45997e33b7c7b689c7a33cf3b06"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3+1"
   typed_data:
     dependency: transitive
     description:

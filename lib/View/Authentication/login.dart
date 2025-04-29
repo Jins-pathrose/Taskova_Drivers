@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskova_drivers/Model/api_config.dart';
 import 'package:taskova_drivers/Model/apple_sign_in.dart';
 import 'package:taskova_drivers/View/Authentication/forgot_password.dart';
 import 'package:taskova_drivers/View/Authentication/signup.dart';
@@ -51,8 +52,7 @@ class _LoginPageState extends State<LoginPage>
         context,
         MaterialPageRoute(
           builder: (context) => HomePage(
-            email: prefs.getString('user_email') ?? "",
-            name: prefs.getString('user_name') ?? "User",
+          
           ),
         ),
       );
@@ -85,8 +85,7 @@ class _LoginPageState extends State<LoginPage>
           context,
           MaterialPageRoute(
             builder: (context) => HomePage(
-              email: user.email,
-              name: user.displayName ?? "No Name",
+             
             ),
           ),
         );
@@ -127,13 +126,14 @@ class _LoginPageState extends State<LoginPage>
 
       try {
         final response = await http.post(
-          Uri.parse('http://192.168.20.4:8000/api/login/'),
+          Uri.parse(ApiConfig.loginUrl),
           headers: {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
             'email': _emailController.text,
             'password': _passwordController.text,
+            // 'remember_me': true,
           }),
         );
 
@@ -159,8 +159,7 @@ class _LoginPageState extends State<LoginPage>
             context,
             MaterialPageRoute(
               builder: (context) => HomePage(
-                email: _emailController.text,
-                name: name,
+              
               ),
             ),
           );
