@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
 import 'package:taskova_drivers/Model/validations.dart';
 import 'package:taskova_drivers/View/Authentication/otp.dart';
+import 'package:taskova_drivers/View/Language/language_provider.dart';
 import 'login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -22,11 +24,15 @@ class _RegistrationState extends State<Registration> {
   bool _visiblePassword = false;
   bool _isLoading = false;
   String _errorMessage = '';
+    late AppLanguage appLanguage;
+
 
   @override
   void initState() {
     super.initState();
     _visiblePassword = false;
+        appLanguage = Provider.of<AppLanguage>(context, listen: false);
+
   }
 
   Future<void> registerUser() async {
@@ -99,7 +105,7 @@ class _RegistrationState extends State<Registration> {
                 children: [
                   const SizedBox(height: 170),
                    Text(
-                          'TASKOVA',
+                          appLanguage.get('app_name'),
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -109,8 +115,8 @@ class _RegistrationState extends State<Registration> {
                         ),
                   const SizedBox(height: 8),
                   // Tagline
-                  const Text(
-                    'Create an account to get started',
+                   Text(
+                    appLanguage.get('tagline_signup'),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey,
@@ -124,7 +130,8 @@ class _RegistrationState extends State<Registration> {
                     keyboardType: TextInputType.emailAddress,
                     validator: validateEmail,
                     decoration: InputDecoration(
-                      hintText: 'Email address',
+                      labelText: appLanguage.get('email'),
+                      hintText: appLanguage.get('email_hint'),
                       prefixIcon: const Icon(
                         Icons.email_outlined,
                         color: Colors.blue,
@@ -159,7 +166,8 @@ class _RegistrationState extends State<Registration> {
                     obscureText: !_visiblePassword,
                     validator: validatePassword,
                     decoration: InputDecoration(
-                      hintText: 'Password',
+                      labelText: appLanguage.get('password'),
+                      hintText: appLanguage.get('password_hint'),
                       prefixIcon: const Icon(
                         Icons.lock_outline,
                         color: Colors.blue,
@@ -207,13 +215,13 @@ class _RegistrationState extends State<Registration> {
                     obscureText: true,
                     validator: (val) {
                       if (val == null || val.isEmpty)
-                        return 'Confirm password is required';
+                        return appLanguage.get('signup_confrm_password');
                       if (val != _passwordController.text)
-                        return 'Passwords do not match';
+                        return appLanguage.get('passwords_do_not_match');
                       return null;
                     },
                     decoration: InputDecoration(
-                      hintText: 'Confirm password',
+                      hintText: appLanguage.get('confirm_password'),
                       prefixIcon: const Icon(
                         Icons.lock_outline,
                         color: Colors.blue,
@@ -284,8 +292,8 @@ class _RegistrationState extends State<Registration> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
-                              'Create Account',
+                          :  Text(
+                              appLanguage.get('create_account'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -299,7 +307,7 @@ class _RegistrationState extends State<Registration> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account? ',
+                    appLanguage.get('already_have_account'),
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                       TextButton(
@@ -311,8 +319,8 @@ class _RegistrationState extends State<Registration> {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Log In',
+                        child:  Text(
+                          appLanguage.get('login'),
                           style: TextStyle(
                             color: Colors.blue,
                             fontWeight: FontWeight.bold,

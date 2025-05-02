@@ -4,10 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
+import 'package:taskova_drivers/View/Homepage/homepage.dart';
+import 'package:taskova_drivers/View/Language/language_provider.dart';
 
 class ProfileRegistrationPage extends StatefulWidget {
   @override
@@ -36,7 +39,15 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
   
   // For showing detailed error messages
   String? _errorMessage;
+       late AppLanguage appLanguage;
+
+  // List of pages/screens
   
+ void initState() {
+    super.initState();
+        appLanguage = Provider.of<AppLanguage>(context, listen: false);
+
+  }
   Future<void> _getImage() async {
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
@@ -185,7 +196,11 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Profile registered successfully!')),
         );
-        Navigator.pop(context);
+         Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => const HomePage()),
+    (Route<dynamic> route) => false, 
+  );
       } else {
         // Error
         setState(() {
@@ -238,14 +253,14 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
       // Validate required fields
       if (_imageFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please select a profile picture')),
+          SnackBar(content: Text(appLanguage.get('select_profile_picture'))),
         );
         return;
       }
       
       if (_selectedAddress == null || _latitude == null || _longitude == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please select a preferred working area')),
+          SnackBar(content: Text(appLanguage.get('select_working_area'))),
         );
         return;
       }
@@ -258,7 +273,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile Registration'),
+        title: Text(appLanguage.get('profile_registration')),
       ),
       body: _isSubmitting
           ? Center(
@@ -267,7 +282,10 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Submitting profile information...'),
+                  Text(
+                    appLanguage.get('submitting_profile_information'),
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ],
               ),
             )
@@ -292,7 +310,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Registration Failed',
+                              appLanguage.get('registration_failed'),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -346,13 +364,13 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'Full Name',
+                        labelText: appLanguage.get('name'),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.person),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
+                          return appLanguage.get('please_enter_name');
                         }
                         return null;
                       },
@@ -364,17 +382,17 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                     TextFormField(
                       controller: _emailController,
                       decoration: InputDecoration(
-                        labelText: 'Email Address',
+                        labelText: appLanguage.get('email'),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.email),
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email address';
+                          return appLanguage.get('please_enter_email');
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Please enter a valid email address';
+                          return appLanguage.get('please_enter_valid_email');
                         }
                         return null;
                       },
@@ -386,14 +404,14 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                     TextFormField(
                       controller: _phoneController,
                       decoration: InputDecoration(
-                        labelText: 'Phone Number',
+                        labelText: appLanguage.get('phone_number'),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.phone),
                       ),
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
+                          return appLanguage.get('please_enter_phone_number');
                         }
                         return null;
                       },
@@ -405,14 +423,14 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                     TextFormField(
                       controller: _addressController,
                       decoration: InputDecoration(
-                        labelText: 'Address',
+                        labelText: appLanguage.get('address'),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.home),
                       ),
                       maxLines: 3,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your address';
+                          return appLanguage.get('please_enter_address');
                         }
                         return null;
                       },
@@ -429,7 +447,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Are you a British Citizen?',
+                              appLanguage.get('are_u_british'),
                               style: TextStyle(fontSize: 16),
                             ),
                             Switch(
@@ -457,7 +475,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Do you have any criminal history?',
+                              appLanguage.get('criminal_record'),
                               style: TextStyle(fontSize: 16),
                             ),
                             Switch(
@@ -478,7 +496,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                     
                     // Preferred Working Area Section
                     Text(
-                      'Preferred Working Area',
+                      appLanguage.get('working_area'),
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     
@@ -491,7 +509,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                           child: TextFormField(
                             controller: _postcodeController,
                             decoration: InputDecoration(
-                              labelText: 'Search by Postcode',
+                              labelText: appLanguage.get('postcode'),
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.search),
                             ),
@@ -500,7 +518,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                         SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () => _searchByPostcode(_postcodeController.text),
-                          child: Text('Search'),
+                          child: Text(appLanguage.get('search')),
                           style: ElevatedButton.styleFrom(
                             padding: EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -522,7 +540,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Selected Working Area:',
+                                appLanguage.get('selected_working_area'),
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               SizedBox(height: 8),
@@ -543,7 +561,7 @@ class _ProfileRegistrationPageState extends State<ProfileRegistrationPage> {
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: Text(
-                          'Register Profile',
+                          appLanguage.get('confirm'),
                           style: TextStyle(fontSize: 18),
                         ),
                       ),

@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
+import 'package:taskova_drivers/View/Authentication/login.dart';
+import 'package:taskova_drivers/View/Language/language_provider.dart';
 
 class OtpVerification extends StatefulWidget {
   final String email;
@@ -29,11 +32,14 @@ class _OtpVerificationState extends State<OtpVerification> {
   String _successMessage = '';
   int _resendCountdown = 30;
   bool _showResendButton = false;
+  late AppLanguage appLanguage;
 
   @override
   void initState() {
     super.initState();
     _startResendTimer();
+        appLanguage = Provider.of<AppLanguage>(context, listen: false);
+
   }
 
   @override
@@ -73,7 +79,7 @@ class _OtpVerificationState extends State<OtpVerification> {
     final otp = _getOtpCode();
     if (otp.length != 6) {
       setState(() {
-        _errorMessage = 'Please enter all 6 digits';
+        _errorMessage = appLanguage.get('otp_required');
       });
       return;
     }
@@ -88,30 +94,34 @@ class _OtpVerificationState extends State<OtpVerification> {
       final response = await http.post(
         Uri.parse(ApiConfig.verifyOtpUrl),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          "email": widget.email,
-          "code": otp
-        }),
+        body: json.encode({"email": widget.email, "code": otp}),
       );
 
       if (response.statusCode == 200) {
         setState(() {
-          _successMessage = 'Email verified successfully!';
+          _successMessage = appLanguage.get('email_verification_suc');
         });
-        
-        // Navigate after showing success message
+
+        // Navigate to ProfileRegistrationPage after showing success message
         Future.delayed(const Duration(seconds: 1), () {
-          Navigator.pushReplacementNamed(context, '/login');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (Route<dynamic> route) => false, // removes all previous routes
+          );
         });
       } else {
         final errorResponse = jsonDecode(response.body);
         setState(() {
-          _errorMessage = errorResponse['detail'] ?? 'Verification failed. Please try again.';
+          _errorMessage = errorResponse['detail'] ??
+              appLanguage.get('email_verification_fail');
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Connection error. Please check your internet and try again.';
+        _errorMessage =
+            appLanguage.get('connection_error');
+                
       });
     } finally {
       setState(() {
@@ -137,8 +147,8 @@ class _OtpVerificationState extends State<OtpVerification> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('New verification code has been sent'),
+           SnackBar(
+            content: Text(appLanguage.get('otp_sent')),
             backgroundColor: Colors.green,
           ),
         );
@@ -146,12 +156,14 @@ class _OtpVerificationState extends State<OtpVerification> {
       } else {
         final errorResponse = jsonDecode(response.body);
         setState(() {
-          _errorMessage = errorResponse['detail'] ?? 'Failed to resend code. Please try again.';
+          _errorMessage = errorResponse['detail'] ??
+              appLanguage.get('otp_sent_fail');
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Connection error. Please check your internet and try again.';
+        _errorMessage =
+            appLanguage.get('connection_error');
       });
     } finally {
       setState(() {
@@ -164,7 +176,7 @@ class _OtpVerificationState extends State<OtpVerification> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -182,7 +194,7 @@ class _OtpVerificationState extends State<OtpVerification> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              
+
               // Animated verification icon
               Container(
                 width: 100,
@@ -197,19 +209,19 @@ class _OtpVerificationState extends State<OtpVerification> {
                   color: Colors.blue[900],
                 ),
               ),
-              
+
               const SizedBox(height: 36),
-              
+
               // Title with emphasized style
               Text(
-                'Verification Code',
+                appLanguage.get('verification_code'),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Email display with better formatting
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -218,7 +230,7 @@ class _OtpVerificationState extends State<OtpVerification> {
                   text: TextSpan(
                     style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     children: [
-                      const TextSpan(text: 'We\'ve sent a 6-digit code to\n'),
+                       TextSpan(text: appLanguage.get('otp_snackbar')),
                       TextSpan(
                         text: widget.email,
                         style: TextStyle(
@@ -230,9 +242,9 @@ class _OtpVerificationState extends State<OtpVerification> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // OTP input fields with improved styling
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 10),
@@ -244,13 +256,14 @@ class _OtpVerificationState extends State<OtpVerification> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Error message with improved styling
               if (_errorMessage.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: Colors.red.withOpacity(0.1),
@@ -258,22 +271,25 @@ class _OtpVerificationState extends State<OtpVerification> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage,
-                          style: const TextStyle(color: Colors.red, fontSize: 14),
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 14),
                         ),
                       ),
                     ],
                   ),
                 ),
-              
+
               // Success message with improved styling
               if (_successMessage.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.1),
@@ -281,20 +297,22 @@ class _OtpVerificationState extends State<OtpVerification> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                      const Icon(Icons.check_circle_outline,
+                          color: Colors.green, size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _successMessage,
-                          style: const TextStyle(color: Colors.green, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.green, fontSize: 14),
                         ),
                       ),
                     ],
                   ),
                 ),
-              
+
               const Spacer(),
-              
+
               // Verify button with improved styling
               SizedBox(
                 width: double.infinity,
@@ -302,7 +320,6 @@ class _OtpVerificationState extends State<OtpVerification> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _verifyOtp,
                   style: ElevatedButton.styleFrom(
-
                     backgroundColor: Colors.blue[900],
                     foregroundColor: Colors.white,
                     elevation: 0,
@@ -320,8 +337,8 @@ class _OtpVerificationState extends State<OtpVerification> {
                             strokeWidth: 3,
                           ),
                         )
-                      : const Text(
-                          'Verify Code',
+                      :  Text(
+                          appLanguage.get('verfy_code'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -329,15 +346,15 @@ class _OtpVerificationState extends State<OtpVerification> {
                         ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Resend code section with better styling
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Didn't receive the code? ",
+                    appLanguage.get('didnt_receive_code'),
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -361,7 +378,7 @@ class _OtpVerificationState extends State<OtpVerification> {
                                   ),
                                 )
                               : Text(
-                                  "Resend",
+                                  appLanguage.get('resend_code'),
                                   style: TextStyle(
                                     color: primaryColor,
                                     fontWeight: FontWeight.bold,
@@ -379,7 +396,7 @@ class _OtpVerificationState extends State<OtpVerification> {
                         ),
                 ],
               ),
-              
+
               const SizedBox(height: 30),
             ],
           ),
@@ -420,16 +437,14 @@ class _OtpVerificationState extends State<OtpVerification> {
           ),
         ),
         onChanged: (value) {
-          if (value.isNotEmpty) {
-            if (index < 5) {
-              _focusNodes[index + 1].requestFocus();
-            } else {
-              _focusNodes[index].unfocus();
-              _verifyOtp(); // Auto-submit when last digit is entered
-            }
+          // Auto-focus to the next field when a digit is entered
+          if (value.isNotEmpty && index < 5) {
+            _focusNodes[index + 1].requestFocus();
           } else if (value.isEmpty && index > 0) {
+            // Go back to previous field when deleting
             _focusNodes[index - 1].requestFocus();
           }
+          // Removed auto-verification when last digit is entered
         },
       ),
     );

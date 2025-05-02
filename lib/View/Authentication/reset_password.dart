@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
 import 'dart:convert';
 
 import 'package:taskova_drivers/View/Authentication/login.dart';
+import 'package:taskova_drivers/View/Language/language_provider.dart';
 
 class NewPasswordScreen extends StatefulWidget {
   final String email;
@@ -25,6 +27,13 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  late AppLanguage appLanguage;
+
+  @override
+  void initState() {
+    super.initState();
+    appLanguage = Provider.of<AppLanguage>(context, listen: false);
+  }
 
   // List of FocusNodes for each OTP field
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
@@ -49,8 +58,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
       if (_passwordController.text != _confirmPasswordController.text) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Passwords do not match'),
+           SnackBar(
+            content: Text(appLanguage.get('password_notmatch')),
             backgroundColor: Colors.red,
           ),
         );
@@ -81,9 +90,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         if (response.statusCode == 200) {
           // Success case
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+             SnackBar(
               content: Text(
-                  'Password reset successful! You can now login with your new password.'),
+                  appLanguage.get('password_reset_done')),
               backgroundColor: Colors.green,
             ),
           );
@@ -96,7 +105,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         } else {
           // Error case
           final errorResponse = jsonDecode(response.body);
-          String errorMessage = 'Password reset failed';
+          String errorMessage = appLanguage.get('password_reset_fail');
 
           if (errorResponse is Map<String, dynamic>) {
             // Handle the specific error fields
@@ -156,8 +165,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Reset Password',
+        title:  Text(
+          appLanguage.get('reset_password'),
           style: TextStyle(color: Colors.black),
         ),
       ),
@@ -174,7 +183,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   // Logo
                   Center(
                     child: Text(
-                      'Taskova',
+                      appLanguage.get('app_name'),
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -184,8 +193,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   ),
                   const SizedBox(height: 40),
                   // Header text
-                  const Text(
-                    'Create New Password',
+                   Text(
+                    appLanguage.get('create_new_password'),
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -194,7 +203,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                   const SizedBox(height: 16),
                   // OTP instruction text
                   Text(
-                    'Enter the 6-digit code sent to ${widget.email}',
+                    appLanguage.get('enter_code') + widget.email,
                     style: const TextStyle(
                       fontSize: 16,
                       color: Colors.grey,
@@ -253,7 +262,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      labelText: 'New Password',
+                      labelText: appLanguage.get('new_password'),
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -282,10 +291,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your new password';
+                        return appLanguage.get('password_hint_new');
                       }
                       if (value.length < 8) {
-                        return 'Password must be at least 8 characters long';
+                        return appLanguage.get('new_password_validation');
                       }
                       return null;
                     },
@@ -296,7 +305,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: appLanguage.get('confirm_password'),
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -325,10 +334,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
+                        return appLanguage.get('please_confrm_password');
                       }
                       if (value != _passwordController.text) {
-                        return 'Passwords do not match';
+                        return appLanguage.get('passwords_do_not_match');
                       }
                       return null;
                     },
@@ -355,7 +364,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             ),
                           )
                         :  Text(
-                            'Confirm',
+                            appLanguage.get('confirm'),
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

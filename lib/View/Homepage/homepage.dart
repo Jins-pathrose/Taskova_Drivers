@@ -196,11 +196,6 @@ class HomePage extends StatelessWidget {
                 DocumentRegistrationPage()
               ));
             }, child: Text('Document Registration')),
-            ElevatedButton(onPressed: (){
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>
-                ProfileRegistrationPage()
-              ));
-            }, child: Text('Driver Profile'))
           ],
         ),
       ),

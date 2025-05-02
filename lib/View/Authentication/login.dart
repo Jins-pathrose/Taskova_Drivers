@@ -4,13 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
 import 'package:taskova_drivers/Model/apple_sign_in.dart';
 import 'package:taskova_drivers/View/Authentication/forgot_password.dart';
 import 'package:taskova_drivers/View/Authentication/signup.dart';
+import 'package:taskova_drivers/View/BottomNavigation/bottomnavigation.dart';
 import 'package:taskova_drivers/View/Homepage/homepage.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:taskova_drivers/View/Language/language_provider.dart';
+import 'package:taskova_drivers/View/profile.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -28,6 +32,7 @@ class _LoginPageState extends State<LoginPage>
   bool _obscurePassword = true;
   late AnimationController _animationController;
   bool _isLoading = false;
+  late AppLanguage appLanguage;
 
   @override
   void initState() {
@@ -36,6 +41,7 @@ class _LoginPageState extends State<LoginPage>
       vsync: this,
       duration: const Duration(seconds: 0),
     );
+    appLanguage = Provider.of<AppLanguage>(context, listen: false);
     _animationController.forward();
     checkTokenAndNavigate();
   }
@@ -118,66 +124,81 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  Future<void> loginUser() async {
-    if (_formkey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+ Future<void> loginUser() async {
+  if (_formkey.currentState!.validate()) {
+    setState(() {
+      _isLoading = true;
+    });
 
-      try {
-        final response = await http.post(
-          Uri.parse(ApiConfig.loginUrl),
+    try {
+      // 1. First make the login request
+      final response = await http.post(
+        Uri.parse(ApiConfig.loginUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Login successful
+        Map<String, dynamic> responseData = jsonDecode(response.body);
+        print('Login successful: $responseData');
+        
+        // Store tokens in SharedPreferences
+        String accessToken = responseData['access'] ?? "";
+        String refreshToken = responseData['refresh'] ?? "";
+        String name = responseData['name'] ?? "User";
+        
+        await saveTokens(accessToken, refreshToken, _emailController.text, name);
+        
+        // 2. Now check profile status
+        final profileResponse = await http.get(
+          Uri.parse(ApiConfig.profileStatusUrl),
           headers: {
+            'Authorization': 'Bearer $accessToken',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({
-            'email': _emailController.text,
-            'password': _passwordController.text,
-            // 'remember_me': true,
-          }),
         );
 
-        setState(() {
-          _isLoading = false;
-        });
-
-        if (response.statusCode == 200) {
-          // Login successful
-          Map<String, dynamic> responseData = jsonDecode(response.body);
-          print('Login successful: $responseData');
-          
-          // Store tokens in SharedPreferences
-          String accessToken = responseData['access'] ?? "";
-          String refreshToken = responseData['refresh'] ?? "";
-          String name = responseData['name'] ?? "User";
-          
-          await saveTokens(accessToken, refreshToken, _emailController.text, name);
+        if (profileResponse.statusCode == 200) {
+          final profileData = jsonDecode(profileResponse.body);
+          bool isProfileComplete = profileData['is_profile_complete'] ?? false;
           
           showSuccessSnackbar("Login successful!");
           
+          // 3. Navigate based on profile completion status
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(
-              
-              ),
+              builder: (context) => isProfileComplete 
+                  ? MainWrapper()
+                  : ProfileRegistrationPage(), // Replace with your actual profile registration page
             ),
           );
         } else {
-          // Login failed
-          Map<String, dynamic> errorData = jsonDecode(response.body);
-          String errorMessage = errorData['detail'] ?? "Login failed. Please check your credentials.";
-          showErrorSnackbar(errorMessage);
+          // Handle profile status check error
+          showErrorSnackbar("Could not verify profile status");
         }
-      } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-        print("Login error: $e");
-        showErrorSnackbar("Connection error. Please check your internet connection.");
+      } else {
+        // Login failed
+        Map<String, dynamic> errorData = jsonDecode(response.body);
+        String errorMessage = errorData['detail'] ?? "Login failed. Please check your credentials.";
+        showErrorSnackbar(errorMessage);
       }
+    } catch (e) {
+      print("Login error: $e");
+      showErrorSnackbar("Connection error. Please check your internet connection.");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +228,7 @@ class _LoginPageState extends State<LoginPage>
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'TASKOVA',
+                          appLanguage.get('app_name'),
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -217,7 +238,7 @@ class _LoginPageState extends State<LoginPage>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Delivery Drivers Portal',
+                          appLanguage.get('tagline'),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey.shade600,
@@ -236,8 +257,8 @@ class _LoginPageState extends State<LoginPage>
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.email_outlined,
                           color: Colors.blue.shade700),
-                      labelText: 'Email',
-                      hintText: 'Enter your email',
+                      labelText: appLanguage.get('email'),
+                      hintText: appLanguage.get('email_hint'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.blue.shade300),
@@ -252,11 +273,11 @@ class _LoginPageState extends State<LoginPage>
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Email is required';
+                        return appLanguage.get('enter_email');
                       }
                       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                           .hasMatch(value)) {
-                        return 'Please enter a valid email';
+                        return appLanguage.get('email_required');
                       }
                       return null;
                     },
@@ -283,8 +304,8 @@ class _LoginPageState extends State<LoginPage>
                           });
                         },
                       ),
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
+                      labelText: appLanguage.get('password'),
+                      hintText: appLanguage.get('password_hint'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.blue.shade300),
@@ -299,10 +320,10 @@ class _LoginPageState extends State<LoginPage>
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Password is required';
+                        return appLanguage.get('enter_password');
                       }
                       if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                        return appLanguage.get('password_required');
                       }
                       return null;
                     },
@@ -320,7 +341,7 @@ class _LoginPageState extends State<LoginPage>
                         );
                       },
                       child: Text(
-                        'Forgot Password?',
+                        appLanguage.get('forgot_password'),
                         style: TextStyle(
                           color: Colors.blue.shade800,
                           fontWeight: FontWeight.w500,
@@ -352,8 +373,8 @@ class _LoginPageState extends State<LoginPage>
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
-                            'LOGIN',
+                        :  Text(
+                            appLanguage.get('login'),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -376,7 +397,7 @@ class _LoginPageState extends State<LoginPage>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          'OR',
+                          appLanguage.get('Or'),
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontWeight: FontWeight.w500,
@@ -416,8 +437,8 @@ class _LoginPageState extends State<LoginPage>
                           width: 24,
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Continue with Google',
+                         Text(
+                          appLanguage.get('continue_with_google'),
                           style: TextStyle(
                             color: Colors.black87,
                             fontSize: 16,
@@ -437,8 +458,8 @@ class _LoginPageState extends State<LoginPage>
                       color: Colors.white,
                       size: 22,
                     ),
-                    label: const Text(
-                      '  Continue with Apple',
+                    label:  Text(
+                      appLanguage.get('continue_with_apple'),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -463,7 +484,7 @@ class _LoginPageState extends State<LoginPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        appLanguage.get('dont_have_account'),
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           fontSize: 16,
@@ -478,7 +499,7 @@ class _LoginPageState extends State<LoginPage>
                           );
                         },
                         child: Text(
-                          'Sign Up',
+                          appLanguage.get('sign_up'),
                           style: TextStyle(
                             color: Colors.blue.shade800,
                             fontWeight: FontWeight.bold,

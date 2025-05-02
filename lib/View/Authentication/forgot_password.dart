@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
 import 'dart:convert';
 
 import 'package:taskova_drivers/View/Authentication/reset_password.dart';
+import 'package:taskova_drivers/View/Language/language_provider.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -17,6 +19,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
+  late AppLanguage appLanguage = Provider.of<AppLanguage>(context, listen: false);
 
   Future<void> _sendOTP() async {
     if (_formKey.currentState!.validate()) {
@@ -39,8 +42,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (response.statusCode == 200) {
           // Successfully sent OTP
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP sent to your email'),
+             SnackBar(
+              content: Text(appLanguage.get('OTP sent to your email')),
+              duration: Duration(seconds: 2),     
               backgroundColor: Colors.green,
             ),
           );
@@ -51,7 +55,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         } else {
           // Error handling
           final responseData = jsonDecode(response.body);
-          String errorMessage = responseData['message'] ?? 'Failed to send OTP. Please try again.';
+          String errorMessage = responseData['message'] ?? appLanguage.get('Failed to send OTP. Please try again.');
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -90,8 +94,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Forgot Password',
+        title:  Text(
+          appLanguage.get('forgot_password'),
           style: TextStyle(color: Colors.black),
         ),
       ),
@@ -108,7 +112,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   // Logo
                   Center(
                     child: Text(
-                      'Taskova',
+                      appLanguage.get('app_name'),
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -118,8 +122,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: 50),
                   // Header text
-                  const Text(
-                    'Reset Password',
+                   Text(
+                    appLanguage.get('reset_Password'),
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -127,8 +131,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: 16),
                   // Instruction text
-                  const Text(
-                    'Enter your email address and we will send you an OTP to reset your password.',
+                   Text(
+                    appLanguage.get('forgot_password_instruction'),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey,
@@ -140,7 +144,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'Email address',
+                      labelText: appLanguage.get('email'),
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -156,10 +160,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
+                        return appLanguage.get('Please enter your email');
                       }
                       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Please enter a valid email';
+                        return appLanguage.get('Please enter a valid email');
                       }
                       return null;
                     },
@@ -185,8 +189,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
-                            'Send OTP',
+                        :  Text(
+                            appLanguage.get('send_otp'),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -202,7 +206,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         Navigator.pop(context);
                       },
                       child: Text(
-                        'Back to Login',
+                        appLanguage.get('Back to Login'),
                         style: TextStyle(
                           color: Colors.blue[900],
                           fontWeight: FontWeight.w600,

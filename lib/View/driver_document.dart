@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taskova_drivers/Model/api_config.dart';
 import 'dart:convert';
-
 import 'package:taskova_drivers/View/Homepage/admin_approval.dart';
 
 class DocumentRegistrationPage extends StatefulWidget {
@@ -17,7 +16,7 @@ class DocumentRegistrationPage extends StatefulWidget {
 
 class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
   final ImagePicker _picker = ImagePicker();
-  bool _isBritishCitizen = false;
+  bool? _isBritishCitizen;
   bool _isLoading = false;
   
   // Store image files
@@ -34,26 +33,18 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
   File? _drivingLicenseFront;
   File? _drivingLicenseBack;
 
-  // Function to pick image
-  Future<File?> _pickImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image == null) return null;
-      return File(image.path);
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-      return null;
-    }
+  @override
+  void initState() {
+    super.initState();
+    _fetchCitizenshipStatus();
   }
 
-  // Function to upload document to the API
-  Future<bool> _uploadDocument({
-    required String documentType,
-    required File frontImage,
-    required File backImage,
-  }) async {
+ Future<void> _fetchCitizenshipStatus() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      // Get access token from shared preferences
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('access_token');
       
@@ -61,32 +52,101 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
         throw Exception('Access token not found');
       }
 
-      // Create multipart request
+      final response = await http.get(
+        Uri.parse(ApiConfig.driverProfileUrl),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        
+        // Improved parsing with better error handling
+        if (responseData is Map<String, dynamic>) {
+          setState(() {
+            _isBritishCitizen = responseData['is_british_citizen'] as bool? ?? false;
+          });
+        } else {
+          throw Exception('Invalid API response format');
+        }
+      } else {
+        throw Exception('Failed to load citizenship status. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching citizenship status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: _fetchCitizenshipStatus,
+            ),
+          ),
+        );
+      }
+      // Default to false if there's an error
+      setState(() {
+        _isBritishCitizen = false;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<File?> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return null;
+      return File(image.path);
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+      return null;
+    }
+  }
+
+  Future<bool> _uploadDocument({
+    required String documentType,
+    required File frontImage,
+    required File backImage,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+      
+      if (accessToken == null) {
+        throw Exception('Access token not found');
+      }
+
       final uri = Uri.parse(ApiConfig.driverDocumentUrl);
       final request = http.MultipartRequest('POST', uri);
       
-      // Add authorization header
       request.headers['Authorization'] = 'Bearer $accessToken';
-      
-      // Add document type
       request.fields['document_type'] = documentType;
       
-      // Add front image
       request.files.add(await http.MultipartFile.fromPath(
         'front_image',
         frontImage.path,
       ));
       
-      // Add back image
       request.files.add(await http.MultipartFile.fromPath(
         'back_image',
         backImage.path,
       ));
       
-      // Send request
       final response = await request.send();
       
-      // Check response
       if (response.statusCode == 201 || response.statusCode == 200) {
         debugPrint('Document uploaded successfully: $documentType');
         return true;
@@ -101,83 +161,86 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
     }
   }
 
-  // Function to upload all documents
   Future<void> _submitAllDocuments() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Upload Proof of Identity
-      bool success = await _uploadDocument(
-        documentType: 'IDENTITY',
-        frontImage: _idFront!,
-        backImage: _idBack!,
-      );
-      
-      if (!success) throw Exception('Failed to upload identity document');
-      
-      // Upload British Passport or Right to Work UK based on citizenship
-      if (_isBritishCitizen) {
-        success = await _uploadDocument(
-          documentType: 'PASSPORT',
-          frontImage: _passportFront!,
-          backImage: _passportBack!,
-        );
-        if (!success) throw Exception('Failed to upload passport document');
-      } else {
-        success = await _uploadDocument(
-          documentType: 'RIGHT_TO_WORK',
-          frontImage: _rightToWorkUKFront!,
-          backImage: _rightToWorkUKBack!,
-        );
-        if (!success) throw Exception('Failed to upload right to work document');
+      // Validate all required documents are uploaded
+      if (_idFront == null || _idBack == null ||
+          (_isBritishCitizen! && (_passportFront == null || _passportBack == null)) ||
+          (!_isBritishCitizen! && (_rightToWorkUKFront == null || _rightToWorkUKBack == null)) ||
+          _addressProofFront == null || _addressProofBack == null ||
+          _vehicleInsuranceFront == null || _vehicleInsuranceBack == null ||
+          _drivingLicenseFront == null || _drivingLicenseBack == null) {
+        throw Exception('Please upload all required documents');
       }
-      
-      // Upload Proof of Address
-      success = await _uploadDocument(
-        documentType: 'ADDRESS',
-        frontImage: _addressProofFront!,
-        backImage: _addressProofBack!,
-      );
-      if (!success) throw Exception('Failed to upload address proof document');
-      
-      // Upload Vehicle Insurance
-      success = await _uploadDocument(
-        documentType: 'INSURANCE',
-        frontImage: _vehicleInsuranceFront!,
-        backImage: _vehicleInsuranceBack!,
-      );
-      if (!success) throw Exception('Failed to upload insurance document');
-      
-      // Upload Driving License
-      success = await _uploadDocument(
-        documentType: 'LICENSE',
-        frontImage: _drivingLicenseFront!,
-        backImage: _drivingLicenseBack!,
-      );
-      if (!success) throw Exception('Failed to upload driving license document');
-      
-      // All documents uploaded successfully
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All documents submitted successfully!')),
-      );
-      
-      // Navigate to the next screen or home screen
-      // Navigator.of(context).pushReplacementNamed('/home');
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>DocumentVerificationPendingScreen()));
+
+      // Upload documents in sequence
+      final uploads = [
+        _uploadDocument(
+          documentType: 'IDENTITY',
+          frontImage: _idFront!,
+          backImage: _idBack!,
+        ),
+        _isBritishCitizen!
+            ? _uploadDocument(
+                documentType: 'PASSPORT',
+                frontImage: _passportFront!,
+                backImage: _passportBack!,
+              )
+            : _uploadDocument(
+                documentType: 'RIGHT_TO_WORK',
+                frontImage: _rightToWorkUKFront!,
+                backImage: _rightToWorkUKBack!,
+              ),
+        _uploadDocument(
+          documentType: 'ADDRESS',
+          frontImage: _addressProofFront!,
+          backImage: _addressProofBack!,
+        ),
+        _uploadDocument(
+          documentType: 'INSURANCE',
+          frontImage: _vehicleInsuranceFront!,
+          backImage: _vehicleInsuranceBack!,
+        ),
+        _uploadDocument(
+          documentType: 'LICENSE',
+          frontImage: _drivingLicenseFront!,
+          backImage: _drivingLicenseBack!,
+        ),
+      ];
+
+      final results = await Future.wait(uploads);
+      if (results.contains(false)) {
+        throw Exception('Some documents failed to upload');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All documents submitted successfully!')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DocumentVerificationPendingScreen()),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // Function to upload document with front and back sides
   Widget _buildDocumentUpload({
     required String title,
     required File? frontFile,
@@ -204,7 +267,7 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
               child: InkWell(
                 onTap: () async {
                   final file = await _pickImage();
-                  if (file != null) {
+                  if (file != null && mounted) {
                     onFrontUploaded(file);
                   }
                 },
@@ -241,7 +304,7 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
               child: InkWell(
                 onTap: () async {
                   final file = await _pickImage();
-                  if (file != null) {
+                  if (file != null && mounted) {
                     onBackUploaded(file);
                   }
                 },
@@ -285,6 +348,13 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
       appBar: AppBar(
         title: const Text('Document Registration'),
         backgroundColor: Colors.blue[700],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchCitizenshipStatus,
+            tooltip: 'Refresh citizenship status',
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -304,72 +374,30 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
                   title: 'Proof of Identity',
                   frontFile: _idFront,
                   backFile: _idBack,
-                  onFrontUploaded: (file) {
-                    setState(() {
-                      _idFront = file;
-                    });
-                  },
-                  onBackUploaded: (file) {
-                    setState(() {
-                      _idBack = file;
-                    });
-                  },
+                  onFrontUploaded: (file) => setState(() => _idFront = file),
+                  onBackUploaded: (file) => setState(() => _idBack = file),
                 ),
                 
                 const SizedBox(height: 16),
                 
-                // British Citizen Toggle
-                Row(
-                  children: [
-                    const Text(
-                      'Are you a British Citizen?',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Switch(
-                      value: _isBritishCitizen,
-                      onChanged: (value) {
-                        setState(() {
-                          _isBritishCitizen = value;
-                        });
-                      },
-                      activeColor: Colors.blue[700],
-                    ),
-                  ],
-                ),
-                
-                // Show British Passport or Right to Work UK based on citizenship
-                if (_isBritishCitizen)
+                // Conditional document based on citizenship status
+                if (_isBritishCitizen == null)
+                  const Center(child: CircularProgressIndicator())
+                else if (_isBritishCitizen!)
                   _buildDocumentUpload(
                     title: 'British Passport',
                     frontFile: _passportFront,
                     backFile: _passportBack,
-                    onFrontUploaded: (file) {
-                      setState(() {
-                        _passportFront = file;
-                      });
-                    },
-                    onBackUploaded: (file) {
-                      setState(() {
-                        _passportBack = file;
-                      });
-                    },
+                    onFrontUploaded: (file) => setState(() => _passportFront = file),
+                    onBackUploaded: (file) => setState(() => _passportBack = file),
                   )
                 else
                   _buildDocumentUpload(
                     title: 'Right to Work UK',
                     frontFile: _rightToWorkUKFront,
                     backFile: _rightToWorkUKBack,
-                    onFrontUploaded: (file) {
-                      setState(() {
-                        _rightToWorkUKFront = file;
-                      });
-                    },
-                    onBackUploaded: (file) {
-                      setState(() {
-                        _rightToWorkUKBack = file;
-                      });
-                    },
+                    onFrontUploaded: (file) => setState(() => _rightToWorkUKFront = file),
+                    onBackUploaded: (file) => setState(() => _rightToWorkUKBack = file),
                   ),
                 
                 // Proof of Address
@@ -377,33 +405,17 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
                   title: 'Proof of Address',
                   frontFile: _addressProofFront,
                   backFile: _addressProofBack,
-                  onFrontUploaded: (file) {
-                    setState(() {
-                      _addressProofFront = file;
-                    });
-                  },
-                  onBackUploaded: (file) {
-                    setState(() {
-                      _addressProofBack = file;
-                    });
-                  },
+                  onFrontUploaded: (file) => setState(() => _addressProofFront = file),
+                  onBackUploaded: (file) => setState(() => _addressProofBack = file),
                 ),
                 
-                // Proof of Vehicle Insurance
+                // Vehicle Insurance
                 _buildDocumentUpload(
-                  title: 'Proof of Vehicle Insurance',
+                  title: 'Vehicle Insurance',
                   frontFile: _vehicleInsuranceFront,
                   backFile: _vehicleInsuranceBack,
-                  onFrontUploaded: (file) {
-                    setState(() {
-                      _vehicleInsuranceFront = file;
-                    });
-                  },
-                  onBackUploaded: (file) {
-                    setState(() {
-                      _vehicleInsuranceBack = file;
-                    });
-                  },
+                  onFrontUploaded: (file) => setState(() => _vehicleInsuranceFront = file),
+                  onBackUploaded: (file) => setState(() => _vehicleInsuranceBack = file),
                 ),
                 
                 // Driving License
@@ -411,16 +423,8 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
                   title: 'Driving License',
                   frontFile: _drivingLicenseFront,
                   backFile: _drivingLicenseBack,
-                  onFrontUploaded: (file) {
-                    setState(() {
-                      _drivingLicenseFront = file;
-                    });
-                  },
-                  onBackUploaded: (file) {
-                    setState(() {
-                      _drivingLicenseBack = file;
-                    });
-                  },
+                  onFrontUploaded: (file) => setState(() => _drivingLicenseFront = file),
+                  onBackUploaded: (file) => setState(() => _drivingLicenseBack = file),
                 ),
                 
                 const SizedBox(height: 32),
@@ -430,34 +434,9 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading 
-                      ? null 
-                      : () {
-                          // Validate if all required documents are uploaded
-                          bool isValid = _idFront != null && _idBack != null;
-                          
-                          if (_isBritishCitizen) {
-                            isValid = isValid && _passportFront != null && _passportBack != null;
-                          } else {
-                            isValid = isValid && _rightToWorkUKFront != null && _rightToWorkUKBack != null;
-                          }
-                          
-                          isValid = isValid && 
-                            _addressProofFront != null && 
-                            _addressProofBack != null &&
-                            _vehicleInsuranceFront != null && 
-                            _vehicleInsuranceBack != null &&
-                            _drivingLicenseFront != null && 
-                            _drivingLicenseBack != null;
-                          
-                          if (isValid) {
-                            _submitAllDocuments();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please upload all required documents')),
-                            );
-                          }
-                        },
+                    onPressed: _isLoading || _isBritishCitizen == null
+                        ? null
+                        : _submitAllDocuments,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[700],
                       shape: RoundedRectangleBorder(
@@ -474,8 +453,6 @@ class _DocumentRegistrationPageState extends State<DocumentRegistrationPage> {
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 32),
               ],
             ),
           ),

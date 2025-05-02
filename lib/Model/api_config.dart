@@ -34,6 +34,8 @@ class ApiConfig {
   static String get resendOtpUrl {
     return '$baseUrl/api/resend-otp/';
   }
-
+  static String get profileStatusUrl {
+    return '$baseUrl/api/profile-status/';
+  }
   
 }
